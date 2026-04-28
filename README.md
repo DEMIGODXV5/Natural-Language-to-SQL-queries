@@ -136,78 +136,186 @@ nl_to_sql.ipynb
 ```text
 Show all customers from Pune
 ```
+# DSBDA Enhancements Added to Text-to-SQL E-commerce Project
 
+This project has been enhanced with additional **Data Science and Big Data Analytics (DSBDA)** functionalities to improve preprocessing, analytical insights, and automated visualization.
 
-##The Data Health Dashboard (DSBDA Pre-processing)
-Where to add: After the block that finishes loading the CSVs into the database (around Page 4 of your PDF, after the conn.close() and before !pip install google-genai).
-Code to insert:
+---
 
+## 1. Data Health Dashboard (Pre-processing)
+
+### Where to Add
+Insert this code block after loading CSV files into the SQLite database:
+
+- After `conn.close()`
+- Before `!pip install google-genai`
+
+### Purpose
+This module performs dataset quality checks on all database tables by identifying:
+
+- Total records
+- Missing values
+- Duplicate records
+
+### Code
+
+```python
 # --- DSBDA ADDITION: DATA WRANGLING REPORT ---
 import pandas as pd
+import sqlite3
+
 def show_data_health():
     tables = ['customers', 'products', 'orders']
     conn = sqlite3.connect('ecommerce.db')
+
     print("📊 DATASET HEALTH REPORT (DSBDA Unit 2)")
+
     for t in tables:
         df = pd.read_sql(f"SELECT * FROM {t}", conn)
+
         print(f"\nTable: {t.upper()}")
         print(f"- Total Records: {len(df)}")
         print(f"- Missing Values: {df.isnull().sum().sum()}")
         print(f"- Duplicates: {df.duplicated().sum()}")
+
     conn.close()
+
 show_data_health()
-
-
-2. The Analytics Summary (Descriptive Stats)
-Where to add: Inside the execute_query function (around Page 8), right before the final return results_df line.
-Code to insert:
-
-        # --- DSBDA ADDITION: DESCRIPTIVE STATISTICS ---
-        if not results_df.empty:
-            print("\n📈 ANALYTICS SUMMARY:")
-            numeric_cols = results_df.select_dtypes(include=['number']).columns
-            if not numeric_cols.empty:
-                # Shows Mean, Max, Min for any numbers found in the result
-                display(results_df[numeric_cols].describe().loc[['mean', 'max', 'min']])
-
-
-3. Automated Visualization (Plotly)
-Where to add: At the very end of your notebook as a new function, or right after the text2sql function definition (around Page 9).
-Code to insert:
-
-import plotly.express as px
-def visualize_results(df, user_query):
-    if isinstance(df, pd.DataFrame) and not df.empty:
-        cols = df.columns
-        if len(cols) >= 2:
-            # Simple logic: If 1st col is text and 2nd is a number, draw a chart
-            try:
-                fig = px.bar(df, x=cols[0], y=cols[1], title=f"Visualizing: {user_query}")
-                fig.show()
-            except Exception as e:
-                print("Visualization skipped (Incompatible data types)")
-
-# Update your call at the bottom like this:
-# res = text2sql(genai_client, prompt, "show me order count by country")
-# visualize_results(res, "order count by country")
-
-
-4. Update the text2sql wrapper
-Where to add: Modify your existing text2sql function (around Page 9) to include the visualizer automatically.
-Change it to this:
-
-
-def text2sql(genai_client, prompt, user_query):
-    output = get_sql_query(genai_client, prompt, user_query)
-    if output['status'] == 'success':
-        results = execute_query(output['response'])
-        # AUTO-VISUALIZE CALL
-        visualize_results(results, user_query) 
-        return results
-    return output
-
-```text
-Which product has highest sales?
 ```
 
 ---
+
+# 2. Analytics Summary (Descriptive Statistics)
+
+### Where to Add
+Insert this inside the `execute_query()` function right before:
+
+```python
+return results_df
+```
+
+### Purpose
+Automatically generates descriptive statistics for numerical query outputs.
+
+### Features
+- Mean
+- Maximum
+- Minimum
+
+### Code
+
+```python
+# --- DSBDA ADDITION: DESCRIPTIVE STATISTICS ---
+if not results_df.empty:
+    print("\n📈 ANALYTICS SUMMARY:")
+
+    numeric_cols = results_df.select_dtypes(include=['number']).columns
+
+    if not numeric_cols.empty:
+        display(
+            results_df[numeric_cols]
+            .describe()
+            .loc[['mean', 'max', 'min']]
+        )
+```
+
+---
+
+# 3. Automated Data Visualization (Plotly)
+
+### Where to Add
+Add this function at the end of your notebook or after the `text2sql()` function definition.
+
+### Purpose
+Automatically creates visualizations for query results.
+
+### Features
+- Detects compatible columns
+- Creates bar charts automatically
+- Handles incompatible datasets gracefully
+
+### Code
+
+```python
+import plotly.express as px
+
+def visualize_results(df, user_query):
+    if isinstance(df, pd.DataFrame) and not df.empty:
+        cols = df.columns
+
+        if len(cols) >= 2:
+            try:
+                fig = px.bar(
+                    df,
+                    x=cols[0],
+                    y=cols[1],
+                    title=f"Visualizing: {user_query}"
+                )
+                fig.show()
+
+            except Exception as e:
+                print("Visualization skipped (Incompatible data types)")
+```
+
+---
+
+# 4. Update the `text2sql()` Wrapper
+
+### Where to Add
+Modify your existing `text2sql()` function.
+
+### Purpose
+Automatically integrates SQL execution with visualization.
+
+### Updated Code
+
+```python
+def text2sql(genai_client, prompt, user_query):
+    output = get_sql_query(genai_client, prompt, user_query)
+
+    if output['status'] == 'success':
+        results = execute_query(output['response'])
+
+        # AUTO VISUALIZATION
+        visualize_results(results, user_query)
+
+        return results
+
+    return output
+```
+
+---
+
+# Final Workflow
+
+The complete workflow now follows:
+
+1. Load CSV datasets into SQLite database  
+2. Run Data Health Dashboard  
+3. Convert natural language to SQL query  
+4. Execute SQL query  
+5. Generate descriptive analytics summary  
+6. Automatically visualize results  
+
+---
+
+# Tech Stack
+
+- Python  
+- Pandas  
+- SQLite  
+- Google Gemini API  
+- Plotly  
+- Jupyter Notebook  
+
+---
+
+# Benefits of These Enhancements
+
+✅ Better data preprocessing  
+✅ Automatic data quality checks  
+✅ Built-in descriptive analytics  
+✅ Automated visual insights  
+✅ Improved project alignment with DSBDA concepts  
+
+
