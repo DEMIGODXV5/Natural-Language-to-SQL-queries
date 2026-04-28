@@ -1,4 +1,4 @@
-# Natural-Language-to-SQL-queries
+
 # Natural Language to SQL Query Generator
 
 This project converts natural language English queries into SQL queries using Gemini API and executes them on an ecommerce SQLite database.
@@ -136,6 +136,75 @@ nl_to_sql.ipynb
 ```text
 Show all customers from Pune
 ```
+
+
+##The Data Health Dashboard (DSBDA Pre-processing)
+Where to add: After the block that finishes loading the CSVs into the database (around Page 4 of your PDF, after the conn.close() and before !pip install google-genai).
+Code to insert:
+
+# --- DSBDA ADDITION: DATA WRANGLING REPORT ---
+import pandas as pd
+def show_data_health():
+    tables = ['customers', 'products', 'orders']
+    conn = sqlite3.connect('ecommerce.db')
+    print("📊 DATASET HEALTH REPORT (DSBDA Unit 2)")
+    for t in tables:
+        df = pd.read_sql(f"SELECT * FROM {t}", conn)
+        print(f"\nTable: {t.upper()}")
+        print(f"- Total Records: {len(df)}")
+        print(f"- Missing Values: {df.isnull().sum().sum()}")
+        print(f"- Duplicates: {df.duplicated().sum()}")
+    conn.close()
+show_data_health()
+
+
+2. The Analytics Summary (Descriptive Stats)
+Where to add: Inside the execute_query function (around Page 8), right before the final return results_df line.
+Code to insert:
+
+        # --- DSBDA ADDITION: DESCRIPTIVE STATISTICS ---
+        if not results_df.empty:
+            print("\n📈 ANALYTICS SUMMARY:")
+            numeric_cols = results_df.select_dtypes(include=['number']).columns
+            if not numeric_cols.empty:
+                # Shows Mean, Max, Min for any numbers found in the result
+                display(results_df[numeric_cols].describe().loc[['mean', 'max', 'min']])
+
+
+3. Automated Visualization (Plotly)
+Where to add: At the very end of your notebook as a new function, or right after the text2sql function definition (around Page 9).
+Code to insert:
+
+import plotly.express as px
+def visualize_results(df, user_query):
+    if isinstance(df, pd.DataFrame) and not df.empty:
+        cols = df.columns
+        if len(cols) >= 2:
+            # Simple logic: If 1st col is text and 2nd is a number, draw a chart
+            try:
+                fig = px.bar(df, x=cols[0], y=cols[1], title=f"Visualizing: {user_query}")
+                fig.show()
+            except Exception as e:
+                print("Visualization skipped (Incompatible data types)")
+
+# Update your call at the bottom like this:
+# res = text2sql(genai_client, prompt, "show me order count by country")
+# visualize_results(res, "order count by country")
+
+
+4. Update the text2sql wrapper
+Where to add: Modify your existing text2sql function (around Page 9) to include the visualizer automatically.
+Change it to this:
+
+
+def text2sql(genai_client, prompt, user_query):
+    output = get_sql_query(genai_client, prompt, user_query)
+    if output['status'] == 'success':
+        results = execute_query(output['response'])
+        # AUTO-VISUALIZE CALL
+        visualize_results(results, user_query) 
+        return results
+    return output
 
 ```text
 Which product has highest sales?
